@@ -100,6 +100,8 @@ void adiciona_aresta(Grafo* grafo, char* origem, char* destino) {
 void preenche_grafo_aleatoriamente(Grafo* grafo, int num_vertices, int num_arestas) {
     char* vertices[num_vertices];
 
+    int i;
+
     for (i = 0; i < num_vertices; i++) {
         char* nome_vertice = (char*) malloc(2 * sizeof(char));
 
@@ -127,6 +129,77 @@ void preenche_grafo_aleatoriamente(Grafo* grafo, int num_vertices, int num_arest
     }
 }
 
+static void busca_em_profundidade_visit(Grafo* G, int u, bool* visitado, int* tempo, int* d, int* f) {
+    visitado[u] = true;
+    tempo[0] += 1;
+    d[u] = tempo[0];
+
+    No* v = G->lista_adj[u];
+
+    while (v != NULL) {
+        int index = atoi(v->vertice);
+        if (!visitado[index]) {
+            busca_em_profundidade_visit(G, index, visitado, tempo, d, f);
+        }
+
+        v = v->prox;
+    }
+
+    tempo[0] += 1;
+    f[u] = tempo[0];
+}
+
+static Grafo* transpoe_grafo(Grafo* G) {
+    Grafo* GT = cria_grafo();
+
+    for (int i = 0; i < G->num_vertices; i++) {
+        No* v = G->lista_adj[i];
+
+        while (v != NULL) {
+            adiciona_aresta(GT, v->vertice, G->lista_adj[i]->vertice);
+            v = v->prox;
+        }
+    }
+
+    return GT;
+}
+
+static bool busca_em_profundidade(Grafo* G, int n) {
+    bool* visitado = (bool*)calloc(MAX_VERTICES, sizeof(bool));
+    int* d = (int*)calloc(MAX_VERTICES, sizeof(int));
+    int* f = (int*)calloc(MAX_VERTICES, sizeof(int));
+    int tempo = 0;
+
+    busca_em_profundidade_visit(G, n, visitado, &tempo, d, f);
+
+    for (int i = 0; i < G->num_vertices; i++) {
+        if (!visitado[i]) {
+            return false;
+        }
+    }
+
+    Grafo* GT = transpoe_grafo(G);
+    memset(visitado, false, MAX_VERTICES * sizeof(bool));
+    busca_em_profundidade_visit(GT, n, visitado, &tempo, d, f);
+
+    for (int i = 0; i < GT->num_vertices; i++) {
+        if (!visitado[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool grafo_eh_fortemente_conectado(Grafo* G) {
+    for (int i = 0; i < G->num_vertices; i++) {
+        if (!busca_em_profundidade(G, i)) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 void imprime_grafo(Grafo* grafo) {
     for (int i = 0; i < grafo->num_vertices; i++) {
