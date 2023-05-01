@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define MAX_VERTICES 1000
 
@@ -35,7 +36,36 @@ void adiciona_vertice(Grafo* grafo, char* vertice) {
     }
 }
 
+bool existe_aresta(Grafo* grafo, char* origem, char* destino) {
+    int i, j;
+
+    for (i = 0; i < grafo->num_vertices; i++) {
+        if (strcmp(grafo->lista_adj[i]->vertice, origem) == 0) {
+            break;
+        }
+    }
+
+    if (i == grafo->num_vertices) {
+        return false;
+    }
+
+    No* atual = grafo->lista_adj[i]->prox;
+
+    while (atual != NULL) {
+        if (strcmp(atual->vertice, destino) == 0) {
+            return true;
+        }
+        atual = atual->prox;
+    }
+
+    return false;
+}
+
 void adiciona_aresta(Grafo* grafo, char* origem, char* destino) {
+    if (existe_aresta(grafo, origem, destino)) {
+        return;
+    }
+
     int i;
 
     for (i = 0; i < grafo->num_vertices; i++) {
@@ -43,10 +73,12 @@ void adiciona_aresta(Grafo* grafo, char* origem, char* destino) {
             break;
         }
     }
+
     if (i == grafo->num_vertices) {
         printf("Erro: vértice de origem não encontrado.\n");
         return;
     }
+
     No* novo = (No*)malloc(sizeof(No));
     novo->vertice = (char*)malloc(strlen(destino) + 1);
     strcpy(novo->vertice, destino);
@@ -56,13 +88,17 @@ void adiciona_aresta(Grafo* grafo, char* origem, char* destino) {
 
 void imprime_grafo(Grafo* grafo) {
     printf("Grafo:\n");
+
     for (int i = 0; i < grafo->num_vertices; i++) {
         printf("%s: ", grafo->lista_adj[i]->vertice);
+
         No* atual = grafo->lista_adj[i]->prox;
+
         while (atual != NULL) {
             printf("%s; ", atual->vertice);
             atual = atual->prox;
         }
+
         printf("\n");
     }
 }
@@ -78,6 +114,7 @@ int main() {
 
   adiciona_aresta(grafo, "A", "B");
   adiciona_aresta(grafo, "B", "C");
+  adiciona_aresta(grafo, "B", "A");
   adiciona_aresta(grafo, "B", "A");
   adiciona_aresta(grafo, "B", "A");
   adiciona_aresta(grafo, "C", "D");
