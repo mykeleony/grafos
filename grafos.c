@@ -354,6 +354,45 @@ void imprime_ordem_topologica(Grafo* grafo) {
     free(ordem_topologica);
 }
 
+void concatena_componente(Grafo* grafo, int vertice, bool visitados[], char* componente) {
+    visitados[vertice] = true;
+
+    strcat(componente, grafo->lista_adj[vertice]->vertice);
+    strcat(componente, " ");
+
+    No* atual = grafo->lista_adj[vertice]->prox;
+
+    while (atual != NULL) {
+        int vizinho = -1;
+
+        for (int i = 0; i < grafo->num_vertices; i++) {
+            if (strcmp(grafo->lista_adj[i]->vertice, atual->vertice) == 0) {
+                vizinho = i;
+                break;
+            }
+        }
+
+        if (!visitados[vizinho]) {
+            concatena_componente(grafo, vizinho, visitados, componente);
+        }
+
+        atual = atual->prox;
+    }
+}
+
+void concatena_componentes_fortemente_conexas(Grafo* grafo) {
+    int* ordem_topologica = obtem_ordem_topologica(grafo);
+    bool visitados[MAX_VERTICES] = { false };
+
+    for (int i = 0; i < grafo->num_vertices; i++) {
+        int vertice = ordem_topologica[i];
+
+        if (!visitados[vertice]) {
+            char componente[MAX_VERTICES] = { 0 };
+            concatena_componente(grafo, vertice, visitados, componente);
+        }
+    }
+}
 
 void destroi_grafo(Grafo* grafo) {
   int i;
@@ -377,5 +416,32 @@ void destroi_grafo(Grafo* grafo) {
 
 
 int main() {
+  Grafo* grafo = cria_grafo();
+
+  adiciona_vertice(grafo, "abe");
+  adiciona_vertice(grafo, "cd");
+  adiciona_vertice(grafo, "fg");
+  adiciona_vertice(grafo, "h");
+
+  adiciona_aresta(grafo, "abe", "cd");
+  adiciona_aresta(grafo, "abe", "fg");
+  adiciona_aresta(grafo, "cd", "fg");
+  adiciona_aresta(grafo, "cd", "h");
+  adiciona_aresta(grafo, "fg", "h");
+
+  if (eh_fortemente_conectado(grafo))
+    printf("sim\n");
+
+  else
+    printf("nao\n");
+
+  printf("%d\n", conta_componentes_fortemente_conexas(grafo));
+
+  concatena_componentes_fortemente_conexas(grafo);
+
+  imprime_ordem_topologica(grafo);
+
+  imprime_grafo(grafo);
+
   return 0;
 }
