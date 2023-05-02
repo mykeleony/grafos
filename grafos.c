@@ -96,126 +96,263 @@ void adiciona_aresta(Grafo* grafo, char* origem, char* destino) {
     grafo->lista_adj[i]->prox = novo;
 }
 
-// Erdos-Renyi
-void preenche_grafo_aleatoriamente(Grafo* grafo, int num_vertices, int num_arestas) {
-    char* vertices[num_vertices];
-
+void remove_aresta(Grafo* grafo, char* origem, char* destino) {
     int i;
 
-    for (i = 0; i < num_vertices; i++) {
-        char* nome_vertice = (char*) malloc(2 * sizeof(char));
-
-        nome_vertice[0] = 'A' + i; // Nomeia vertice
-        nome_vertice[1] = '\0';
-
-        vertices[i] = nome_vertice;
-
-        adiciona_vertice(grafo, nome_vertice);
-    }
-
-    int num_arestas_criadas = 0;
-
-    while (num_arestas_criadas < num_arestas) {
-        // Escolhe dois vértices aleatoriamente
-        int indice_origem = rand() % num_vertices;
-        int indice_destino = rand() % num_vertices;
-
-        if (indice_origem != indice_destino) {  // Impede self-loops
-            char* origem = vertices[indice_origem];
-            char* destino = vertices[indice_destino];
-            adiciona_aresta(grafo, origem, destino);
-            num_arestas_criadas++;
+    for (i = 0; i < grafo->num_vertices; i++) {
+        if (strcmp(grafo->lista_adj[i]->vertice, origem) == 0) {
+            break;
         }
     }
+
+    if (i == grafo->num_vertices) {
+        printf("Erro: vértice de origem não encontrado.\n");
+        return;
+    }
+
+    No* atual = grafo->lista_adj[i]->prox;
+    No* anterior = grafo->lista_adj[i];
+
+    while (atual != NULL) {
+        if (strcmp(atual->vertice, destino) == 0) {
+            anterior->prox = atual->prox;
+            free(atual->vertice);
+            free(atual);
+            return;
+        }
+
+        anterior = atual;
+        atual = atual->prox;
+    }
+
+    printf("Erro: aresta não encontrada.\n");
 }
 
-static void busca_em_profundidade_visit(Grafo* G, int u, bool* visitado, int* tempo, int* d, int* f) {
-    visitado[u] = true;
-    tempo[0] += 1;
-    d[u] = tempo[0];
+Grafo* grafo_transposto(Grafo* grafo) {
+    Grafo* transposto = cria_grafo();
 
-    No* v = G->lista_adj[u];
-
-    while (v != NULL) {
-        int index = atoi(v->vertice);
-        if (!visitado[index]) {
-            busca_em_profundidade_visit(G, index, visitado, tempo, d, f);
-        }
-
-        v = v->prox;
-    }
-
-    tempo[0] += 1;
-    f[u] = tempo[0];
-}
-
-static Grafo* transpoe_grafo(Grafo* G) {
-    Grafo* GT = cria_grafo();
-
-    for (int i = 0; i < G->num_vertices; i++) {
-        No* v = G->lista_adj[i];
-
-        while (v != NULL) {
-            adiciona_aresta(GT, v->vertice, G->lista_adj[i]->vertice);
-            v = v->prox;
-        }
-    }
-
-    return GT;
-}
-
-static bool busca_em_profundidade(Grafo* G, int n) {
-    bool* visitado = (bool*)calloc(MAX_VERTICES, sizeof(bool));
-    int* d = (int*)calloc(MAX_VERTICES, sizeof(int));
-    int* f = (int*)calloc(MAX_VERTICES, sizeof(int));
-    int tempo = 0;
-
-    busca_em_profundidade_visit(G, n, visitado, &tempo, d, f);
-
-    for (int i = 0; i < G->num_vertices; i++) {
-        if (!visitado[i]) {
-            return false;
-        }
-    }
-
-    Grafo* GT = transpoe_grafo(G);
-    memset(visitado, false, MAX_VERTICES * sizeof(bool));
-    busca_em_profundidade_visit(GT, n, visitado, &tempo, d, f);
-
-    for (int i = 0; i < GT->num_vertices; i++) {
-        if (!visitado[i]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool grafo_eh_fortemente_conectado(Grafo* G) {
-    for (int i = 0; i < G->num_vertices; i++) {
-        if (!busca_em_profundidade(G, i)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-void imprime_grafo(Grafo* grafo) {
+    // Preenche o grafo transposto com o vértices do original
     for (int i = 0; i < grafo->num_vertices; i++) {
-        printf("%s: ", grafo->lista_adj[i]->vertice);
+        adiciona_vertice(transposto, grafo->lista_adj[i]->vertice);
+    }
 
+    for (int i = 0; i < grafo->num_vertices; i++) {
         No* atual = grafo->lista_adj[i]->prox;
 
         while (atual != NULL) {
-            printf("%s; ", atual->vertice);
+            char* origem = atual->vertice;
+            char* destino = grafo->lista_adj[i]->vertice;
+
+            // Verifica se a aresta é um laço
+            if (strcmp(origem, destino) != 0) {
+                if (!existe_aresta(transposto, origem, destino)) {
+                    adiciona_aresta(transposto, origem, destino);
+                }
+            }
+
+            // Avança para a próxima aresta na lista de adjacência
             atual = atual->prox;
         }
+    }
 
-        printf("\n");
+    return transposto;
+}
+
+// Erdos-Renyi
+void preenche_grafo_aleatoriamente(Grafo* grafo, int num_vertices, int num_arestas) {
+  char* vertices[num_vertices];
+
+  int i;
+
+  for (i = 0; i < num_vertices; i++) {
+      char* nome_vertice = (char*) malloc(2 * sizeof(char));
+
+      nome_vertice[0] = 'A' + i; // Nomeia vertice
+      nome_vertice[1] = '\0';
+
+      vertices[i] = nome_vertice;
+
+      adiciona_vertice(grafo, nome_vertice);
+  }
+
+  int num_arestas_criadas = 0;
+
+  while (num_arestas_criadas < num_arestas) {
+      // Escolhe dois vértices aleatoriamente
+      int indice_origem = rand() % num_vertices;
+      int indice_destino = rand() % num_vertices;
+
+      if (indice_origem != indice_destino) {  // Impede self-loops
+          char* origem = vertices[indice_origem];
+          char* destino = vertices[indice_destino];
+          adiciona_aresta(grafo, origem, destino);
+          num_arestas_criadas++;
+      }
+  }
+}
+
+void imprime_grafo(Grafo* grafo) {
+  for (int i = 0; i < grafo->num_vertices; i++) {
+      printf("%s: ", grafo->lista_adj[i]->vertice);
+
+      No* atual = grafo->lista_adj[i]->prox;
+
+      while (atual != NULL) {
+          printf("%s; ", atual->vertice);
+          atual = atual->prox;
+      }
+
+      printf("\n");
+  }
+}
+
+void visita_ordem_topologica(Grafo* grafo, int vertice, bool visitados[], int ordem_topologica[], int* indice) {
+    visitados[vertice] = true;
+
+    No* atual = grafo->lista_adj[vertice]->prox;
+
+    while (atual != NULL) {
+        int vizinho = -1;
+
+        for (int i = 0; i < grafo->num_vertices; i++) {
+            if (strcmp(grafo->lista_adj[i]->vertice, atual->vertice) == 0) {
+                vizinho = i;
+                break;
+            }
+        }
+
+        if (!visitados[vizinho]) {
+            visita_ordem_topologica(grafo, vizinho, visitados, ordem_topologica, indice);
+        }
+
+        atual = atual->prox;
+    }
+
+    ordem_topologica[*indice] = vertice;
+    (*indice)--;
+}
+
+int* obtem_ordem_topologica(Grafo* grafo) {
+    bool visitados[MAX_VERTICES] = { false };
+    int* ordem_topologica = (int*)malloc(sizeof(int) * grafo->num_vertices);
+    int indice = grafo->num_vertices - 1;
+
+    for (int i = 0; i < grafo->num_vertices; i++) {
+        if (!visitados[i]) {
+            visita_ordem_topologica(grafo, i, visitados, ordem_topologica, &indice);
+        }
+    }
+
+    return ordem_topologica;
+}
+
+void visita_componente(Grafo* grafo, int vertice, bool visitados[], int componente[]) {
+    visitados[vertice] = true;
+
+    componente[vertice] = 1;
+
+    No* atual = grafo->lista_adj[vertice]->prox;
+
+    while (atual != NULL) {
+        int vizinho = -1;
+
+        for (int i = 0; i < grafo->num_vertices; i++) {
+            if (strcmp(grafo->lista_adj[i]->vertice, atual->vertice) == 0) {
+                vizinho = i;
+                break;
+            }
+        }
+
+        if (!visitados[vizinho]) {
+            visita_componente(grafo, vizinho, visitados, componente);
+        }
+
+        atual = atual->prox;
     }
 }
 
+void encontra_componentes_fortemente_conexas(Grafo* grafo) {
+    int* ordem_topologica = obtem_ordem_topologica(grafo);
+    bool visitados[MAX_VERTICES] = { false };
+    int componente[MAX_VERTICES] = { 0 };
+    int num_componentes = 0;
+
+    for (int i = 0; i < grafo->num_vertices; i++) {
+        int vertice = ordem_topologica[i];
+
+        if (!visitados[vertice]) {
+            num_componentes++;
+            visita_componente(grafo, vertice, visitados, componente);
+
+            printf("Componente fortemente conexa %d: ", num_componentes);
+            for (int j = 0; j < grafo->num_vertices; j++) {
+                if (componente[j]) {
+                    printf("%s ", grafo->lista_adj[j]->vertice);
+                }
+            }
+            printf("\n");
+        }
+    }
+
+    free(ordem_topologica);
+}
+
+int conta_componentes_fortemente_conexas(Grafo* grafo) {
+    // Obtém a ordem topológica dos vértices
+    int* ordem_topologica = obtem_ordem_topologica(grafo);
+
+    grafo = grafo_transposto(grafo);
+
+    // Percorre a ordem topológica do grafo transposto e conta o número de componentes fortemente conectados
+    bool visitados[MAX_VERTICES] = { false };
+
+    int num_componentes = 0;
+
+    for (int i = 0; i < grafo->num_vertices; i++) {
+        int vertice = ordem_topologica[i];
+        if (!visitados[vertice]) {
+            int componente[MAX_VERTICES] = { 0 };
+            visita_componente(grafo, vertice, visitados, componente);
+            bool todos_visitados = true;
+            for (int j = 0; j < grafo->num_vertices; j++) {
+                if (componente[j] == 1 && !visitados[j]) {
+                    todos_visitados = false;
+                    break;
+                }
+            }
+            if (todos_visitados) {
+                num_componentes++;
+            }
+        }
+    }
+
+    return num_componentes;
+}
+
+
+void destroi_grafo(Grafo* grafo) {
+  int i;
+
+  for (i = 0; i < grafo->num_vertices; i++) {
+      No* atual = grafo->lista_adj[i]->prox;
+
+      while (atual != NULL) {
+          No* proximo = atual->prox;
+          free(atual->vertice);
+          free(atual);
+          atual = proximo;
+      }
+
+      free(grafo->lista_adj[i]->vertice);
+      free(grafo->lista_adj[i]);
+  }
+
+  free(grafo);
+}
+
+
 int main() {
+  
+
   return 0;
 }
