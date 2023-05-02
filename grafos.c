@@ -17,7 +17,7 @@ typedef struct _grafo {
 } Grafo;
 
 Grafo* cria_grafo() {
-    Grafo* grafo = (Grafo*)malloc(sizeof(Grafo));
+    Grafo* grafo = (Grafo*) malloc(sizeof(Grafo));
 
     grafo->num_vertices = 0;
 
@@ -30,8 +30,8 @@ Grafo* cria_grafo() {
 
 void adiciona_vertice(Grafo* grafo, char* vertice) {
     if (grafo->num_vertices < MAX_VERTICES) {
-        grafo->lista_adj[grafo->num_vertices] = (No*)malloc(sizeof(No));
-        grafo->lista_adj[grafo->num_vertices]->vertice = (char*)malloc(strlen(vertice) + 1);
+        grafo->lista_adj[grafo->num_vertices] = (No*) malloc(sizeof(No));
+        grafo->lista_adj[grafo->num_vertices]->vertice = (char*) malloc(strlen(vertice) + 1);
 
         strcpy(grafo->lista_adj[grafo->num_vertices]->vertice, vertice);
 
@@ -87,8 +87,8 @@ void adiciona_aresta(Grafo* grafo, char* origem, char* destino) {
         return;
     }
 
-    No* novo = (No*)malloc(sizeof(No));
-    novo->vertice = (char*)malloc(strlen(destino) + 1);
+    No* novo = (No*) malloc(sizeof(No));
+    novo->vertice = (char*) malloc(strlen(destino) + 1);
 
     strcpy(novo->vertice, destino);
 
@@ -143,7 +143,7 @@ Grafo* grafo_transposto(Grafo* grafo) {
             char* origem = atual->vertice;
             char* destino = grafo->lista_adj[i]->vertice;
 
-            // Verifica se a aresta é um laço
+            // Verifica se a aresta é um self-loop
             if (strcmp(origem, destino) != 0) {
                 if (!existe_aresta(transposto, origem, destino)) {
                     adiciona_aresta(transposto, origem, destino);
@@ -310,16 +310,21 @@ int conta_componentes_fortemente_conexas(Grafo* grafo) {
 
     for (int i = 0; i < grafo->num_vertices; i++) {
         int vertice = ordem_topologica[i];
+
         if (!visitados[vertice]) {
             int componente[MAX_VERTICES] = { 0 };
+
             visita_componente(grafo, vertice, visitados, componente);
+
             bool todos_visitados = true;
+
             for (int j = 0; j < grafo->num_vertices; j++) {
                 if (componente[j] == 1 && !visitados[j]) {
                     todos_visitados = false;
                     break;
                 }
             }
+
             if (todos_visitados) {
                 num_componentes++;
             }
@@ -327,6 +332,26 @@ int conta_componentes_fortemente_conexas(Grafo* grafo) {
     }
 
     return num_componentes;
+}
+
+bool eh_fortemente_conectado(Grafo* grafo) {
+    if (conta_componentes_fortemente_conexas(grafo) == 1) {
+      return true;
+    }
+
+    return false;
+}
+
+void imprime_ordem_topologica(Grafo* grafo) {
+    int* ordem_topologica = obtem_ordem_topologica(grafo);
+
+    for (int i = 0; i < grafo->num_vertices; i++) {
+        printf("%s ", grafo->lista_adj[ordem_topologica[i]]->vertice);
+    }
+
+    printf("\n");
+
+    free(ordem_topologica);
 }
 
 
@@ -352,7 +377,5 @@ void destroi_grafo(Grafo* grafo) {
 
 
 int main() {
-  
-
   return 0;
 }
